@@ -15,6 +15,14 @@
       "version": "1.0.0",
       "keywords": ["code-review", "quality", "architecture", "solid", "dry", "kiss", "yagni"],
       "category": "development"
+    },
+    {
+      "name": "ue5-style-guide",
+      "source": "./plugins/ue5-style-guide",
+      "description": "Auto-activating UE5 best practices for C++ and asset development",
+      "version": "1.0.0",
+      "keywords": ["ue5", "unreal", "style-guide", "c++", "blueprints", "naming", "cpp"],
+      "category": "development"
     }
   ]
 }

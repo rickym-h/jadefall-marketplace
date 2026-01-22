@@ -1,0 +1,8 @@
+{
+  "name": "ue5-style-guide",
+  "description": "Auto-activating UE5 best practices for C++ and asset development",
+  "version": "1.0.0",
+  "author": {
+    "name": "Jadefall"
+  }
+}
