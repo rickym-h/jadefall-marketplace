@@ -1,0 +1,20 @@
+{
+  "name": "jadefall-marketplace",
+  "owner": {
+    "name": "Jadefall"
+  },
+  "metadata": {
+    "description": "Curated plugins for code quality and development workflows",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "code-review",
+      "source": "./plugins/code-review",
+      "description": "Code quality review plugin checking DRY, KISS, YAGNI, and SOLID principles",
+      "version": "1.0.0",
+      "keywords": ["code-review", "quality", "architecture", "solid", "dry", "kiss", "yagni"],
+      "category": "development"
+    }
+  ]
+}
