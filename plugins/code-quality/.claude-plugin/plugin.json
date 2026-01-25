@@ -1,0 +1,8 @@
+{
+  "name": "code-quality",
+  "description": "Code quality, review, and documentation best practices for Claude Code projects",
+  "version": "1.0.0",
+  "author": {
+    "name": "Ricky Hull"
+  }
+}

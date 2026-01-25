@@ -1,7 +1,7 @@
 {
   "name": "jadefall-marketplace",
   "owner": {
-    "name": "Jadefall"
+    "name": "Ricky Hull"
   },
   "metadata": {
     "description": "Curated plugins for code quality and development workflows",
@@ -9,19 +9,19 @@
   },
   "plugins": [
     {
-      "name": "code-review",
-      "source": "./plugins/code-review",
-      "description": "Code quality review plugin checking DRY, KISS, YAGNI, and SOLID principles",
-      "version": "1.0.0",
-      "keywords": ["code-review", "quality", "architecture", "solid", "dry", "kiss", "yagni"],
-      "category": "development"
-    },
-    {
       "name": "ue5-style-guide",
       "source": "./plugins/ue5-style-guide",
       "description": "Auto-activating UE5 best practices for C++ and asset development",
       "version": "1.0.0",
       "keywords": ["ue5", "unreal", "style-guide", "c++", "blueprints", "naming", "cpp"],
+      "category": "development"
+    },
+    {
+      "name": "code-quality",
+      "source": "./plugins/code-quality",
+      "description": "Code quality, review, and documentation best practices for Claude Code projects",
+      "version": "1.0.0",
+      "keywords": ["code-review", "documentation", "claude-md", "context", "solid", "dry", "kiss", "yagni"],
       "category": "development"
     }
   ]
