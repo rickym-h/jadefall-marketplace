@@ -1,0 +1,8 @@
+{
+  "name": "statusline-builder",
+  "version": "1.0.0",
+  "description": "Build and customize your Claude Code statusline with selectable components",
+  "author": {
+    "name": "Ricky Hull"
+  }
+}

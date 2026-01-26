@@ -23,6 +23,14 @@
       "version": "1.0.0",
       "keywords": ["code-review", "documentation", "claude-md", "context", "solid", "dry", "kiss", "yagni"],
       "category": "development"
+    },
+    {
+      "name": "statusline-builder",
+      "source": "./plugins/statusline-builder",
+      "description": "Build and customize your Claude Code statusline with selectable components",
+      "version": "1.0.0",
+      "keywords": ["statusline", "customization", "ui"],
+      "category": "development"
     }
   ]
 }
