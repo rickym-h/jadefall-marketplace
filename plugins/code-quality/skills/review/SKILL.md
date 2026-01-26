@@ -1,55 +1,191 @@
 ---
-description: Review code and architecture for quality principles
+description: Code review for quality, spec adherence, and clean code principles
 ---
 
-Review the selected code or recent changes for adherence to software engineering principles:
+# Code Review
 
-## Code Quality Principles
+Review code changes for spec adherence, clean code principles, and quality.
 
-**DRY (Don't Repeat Yourself)**
-- Identify duplicated code, logic, or patterns
-- Suggest abstractions or refactoring opportunities
-- Check for repeated string literals, magic numbers, or configuration
+## Parse Arguments
 
-**KISS (Keep It Simple, Stupid)**
-- Flag overly complex solutions
-- Identify unnecessary abstractions or indirection
-- Suggest simpler approaches where complexity isn't justified
-- Look for over-engineered patterns
+Parse the command arguments: `{{ args }}`
 
-**YAGNI (You Aren't Gonna Need It)**
-- Identify speculative features or unused code
-- Flag premature optimizations
-- Find unnecessary configurability or extensibility
-- Spot features built for hypothetical future requirements
+**Flags to detect:**
+- `--branch` or `-b`: Review branch diff against main
+- `--thorough` or `-t`: Force subagent mode
+- `--simple` or `-s`: Force single-pass mode
+- `--report` or `-r`: Save findings to file
+- `--spec <path>`: Reference a spec document
+- `--help` or `help`: Show help (invoke `/review-help` instead)
 
-**SOLID Principles**
+If `help` or `--help` is present, display the help information from the review-help skill and stop.
 
-*Single Responsibility Principle*
-- Each class/module should have one reason to change
-- Flag classes doing too many unrelated things
+## Gather the Diff
 
-*Open/Closed Principle*
-- Code should be open for extension, closed for modification
-- Check if new features require modifying existing code
+**Default (no `--branch`):**
+```bash
+git diff
+git diff --cached
+```
+Combine staged and unstaged changes.
 
-*Liskov Substitution Principle*
-- Subtypes should be substitutable for base types
-- Flag inheritance hierarchies that violate contracts
+**With `--branch` flag:**
+```bash
+git merge-base HEAD main
+git diff <merge-base>..HEAD
+```
+Get all changes on current branch since diverging from main.
 
-*Interface Segregation Principle*
-- Clients shouldn't depend on interfaces they don't use
-- Flag large, monolithic interfaces
+Count the lines changed to determine review mode.
 
-*Dependency Inversion Principle*
-- Depend on abstractions, not concretions
-- Check for high coupling to concrete implementations
+## Determine Review Mode
 
-## Additional Checks
+- If `--thorough` flag: Use subagent mode
+- If `--simple` flag: Use single-pass mode
+- If diff > 200 lines: Use subagent mode
+- Otherwise: Use single-pass mode
 
-- **Architecture Quality**: Overall structure and organization
-- **Maintainability**: How easy it will be to modify and extend
-- **Readability**: Code clarity and documentation needs
-- **Potential Issues**: Edge cases, error handling, security concerns
+## Load Spec Context
 
-Provide specific, actionable feedback with code examples where helpful. Prioritize the most impactful issues.
+1. Check if `--spec <path>` was provided - read that file
+2. Otherwise, use conversation context (what the user asked for in this session)
+3. If no context available, note that spec validation will be limited
+
+## Execute Review
+
+### Single-Pass Mode
+
+Review the diff against all criteria in one pass:
+
+**Tier 1: Critical (Must address)**
+
+*Spec Adherence:*
+- Does the code do exactly what was asked—no more, no less?
+- Are there features built for hypothetical future requirements?
+- Is there unnecessary abstraction or configurability?
+- Is anything missing from the requirements?
+
+*Clean Code:*
+- Is the code modular with clear separation of concerns?
+- Is it maintainable—easy to understand, modify, and extend?
+- Is it flexible without being overengineered?
+- Are components loosely coupled and cohesive?
+- Can future developers easily work with this code?
+
+**Tier 2: Important (Should address)**
+- Appropriate error handling (not excessive, not missing)
+- Reasonable test coverage for the changes
+- Dependencies are sensible and not overly coupled
+- No premature optimizations
+
+**Tier 3: Minor (Nice to have)**
+- Project conventions and style consistency
+- Naming clarity
+- Code smells (duplication, magic numbers)
+- Documentation (sufficient but not excessive)
+
+### Subagent Mode
+
+Spawn three specialized agents in parallel using the Task tool:
+
+**Agent 1: Spec Reviewer**
+```
+Prompt: Review this diff against the provided requirements/context.
+
+Requirements/Context:
+[Include conversation context or spec document]
+
+Diff:
+[Include the diff]
+
+Check:
+- Does the implementation match what was requested?
+- Is anything missing from the requirements?
+- Is there scope creep (features not asked for)?
+- Are there features built for hypothetical future needs?
+
+Report findings as [T1] issues. Be specific with file:line references.
+```
+
+**Agent 2: Clean Code Reviewer**
+```
+Prompt: Review this diff for clean code principles.
+
+Diff:
+[Include the diff]
+
+Check:
+- Is the code modular with clear separation of concerns?
+- Is it maintainable—easy to understand and modify?
+- Is it flexible and extensible without being overengineered?
+- Are components loosely coupled and cohesive?
+- Can future developers easily work with this code?
+
+Report findings as [T1] for critical issues, [T2] for important. Be specific with file:line references.
+```
+
+**Agent 3: Overengineering Detector**
+```
+Prompt: Review this diff for overengineering.
+
+Problem being solved:
+[Brief problem statement from context]
+
+Diff:
+[Include the diff]
+
+Check:
+- Unnecessary abstractions or indirection
+- YAGNI violations (features for hypothetical future needs)
+- Premature optimizations
+- Excessive configurability or extensibility
+- Solving a generalized problem instead of the actual problem
+
+Report findings as [T1] issues. Be specific with file:line references.
+```
+
+After all agents complete, collect and deduplicate findings.
+
+## Present Findings
+
+Format findings by tier:
+
+```markdown
+## Code Review Results
+
+**Diff:** [X files changed, Y insertions, Z deletions]
+**Mode:** [Single-pass | Thorough (subagent)]
+
+### [T1] Critical Issues
+[List each issue with file:line reference and explanation]
+
+### [T2] Important Issues
+[List each issue]
+
+### [T3] Minor Issues
+[List each issue]
+
+### Summary
+- Critical: X issues
+- Important: Y issues
+- Minor: Z issues
+```
+
+If no issues found in a tier, note "None found."
+
+## Save Report (if `--report` flag)
+
+Write findings to `docs/reviews/YYYY-MM-DD-review.md` with:
+- Review metadata (date, branch, diff stats, mode)
+- Full findings organized by tier
+- Summary
+
+Create `docs/reviews/` directory if it doesn't exist.
+
+## Key Principles
+
+- **Spec adherence and clean code are equally important** - both are Tier 1
+- **Overengineering is a critical issue** - unnecessary complexity hurts maintainability
+- **Be specific** - always include file:line references
+- **Be actionable** - explain why something is an issue and how to address it
+- **Don't nitpick** - focus on issues that actually matter
