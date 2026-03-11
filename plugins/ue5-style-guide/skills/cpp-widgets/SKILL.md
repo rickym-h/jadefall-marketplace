@@ -22,13 +22,16 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> HealthBar;
 
-    // Optional binding - no error if missing
+    // Optional binding - no error if missing (use for Blueprint-created visuals)
     UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UTextBlock> HealthLabel;
 
-    // Add BlueprintReadOnly for Graph access
-    UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+    UPROPERTY(meta = (BindWidgetOptional))
     TObjectPtr<UImage> DamageFlashImage;
+
+    // Expose data separately for Blueprint binding (not widget references)
+    UPROPERTY(BlueprintReadOnly, Category = "Health")
+    float DisplayHealthPercent;
 
 public:
     void SetHealthPercent(float Percent);
@@ -56,13 +59,43 @@ public:
 ## BindWidget Rules
 
 ```cpp
-// Names MUST match exactly between C++ and Blueprint
+// Use BindWidget when C++ requires the element (compilation fails if missing)
 UPROPERTY(meta = (BindWidget))
-TObjectPtr<UProgressBar> HealthBar;  // BP widget must be named "HealthBar"
+TObjectPtr<UProgressBar> HealthBar;  // BP MUST provide widget named "HealthBar"
 
+// Use BindWidgetOptional when Blueprint should optionally hook up visual elements
 UPROPERTY(meta = (BindWidgetOptional))
-TObjectPtr<UTextBlock> ScoreLabel;  // Optional, won't fail if missing
+TObjectPtr<UTextBlock> ScoreLabel;  // BP can provide "ScoreLabel", but not required
 ```
+
+### Best Practice: Avoiding Blueprint Naming Conflicts
+
+**Keep widget bindings separate from Blueprint-visible properties** to prevent "name already in use" errors:
+
+```cpp
+// ✅ CORRECT - Widget binding without Blueprint visibility
+UPROPERTY(meta = (BindWidget))
+TObjectPtr<UProgressBar> HealthBar;
+
+// ✅ CORRECT - Optional widget binding for Blueprint-created visuals
+UPROPERTY(meta = (BindWidgetOptional))
+TObjectPtr<UTextBlock> HealthLabel;
+
+// ✅ CORRECT - Expose data separately for Blueprint binding
+UPROPERTY(BlueprintReadOnly, Category = "Health")
+float DisplayHealthPercent;  // Blueprint binds text/bars to this
+
+// ⚠️ Avoid - Combining causes naming conflicts in Blueprint editor
+UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+TObjectPtr<UProgressBar> HealthBar;  // "name already in use" error
+```
+
+**Why this matters:**
+- `BindWidget`/`BindWidgetOptional` tells Blueprint to connect an existing widget element by name
+- Adding `BlueprintReadOnly`/`Write` exposes the C++ property itself to Blueprint
+- Both using the same name creates a collision in Blueprint's namespace
+
+**Pattern:** Widget references stay C++-only. Data properties get Blueprint visibility.
 
 ## Base Class Hierarchy
 
