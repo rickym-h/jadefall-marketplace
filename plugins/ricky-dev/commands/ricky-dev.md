@@ -30,12 +30,12 @@ Before starting, assess the task complexity and scale the workflow accordingly:
 - Phase 1: Brief socratic check (2-3 questions max)
 - Phase 2: 2-3 exploration agents, 1 research agent
 - Phase 3: Quick check for side effects (may not need subagents)
-- Phase 4: 2-3 architect agents, brief plan
+- Phase 4: 2-3 architect agents, brief plan, then architecture review agents
 - Phases 5-7: Normal
 
 **Complex tasks** (new system, major feature, architectural change, spans many files):
 - All phases at full depth
-- 3-5 agents in Phases 2 and 4
+- 3-5 agents in Phases 2 and 4, plus full architecture review
 - Subagent-driven implementation
 - Full review with all applicable agents
 
@@ -205,7 +205,7 @@ If the user says "whatever you think is best", provide your recommendation and g
 3. Present to user: approaches, trade-offs, SOLID assessment for each, and **your strong recommendation with reasoning**
 4. **GATE: Ask user which approach they prefer**
 
-5. Once approved, produce an **architecture plan file** saved to `.claude/plans/<feature-name>.md` (use a descriptive kebab-case filename, e.g., `inventory-system.md`, `api-caching-layer.md`):
+5. Once approved, produce an **architecture plan file** saved to `plans/<feature-name>.md` (use a descriptive kebab-case filename, e.g., `inventory-system.md`, `api-caching-layer.md`):
 
    The plan file should contain:
    - **Summary**: What is being built and why (2-3 sentences)
@@ -229,7 +229,32 @@ If the user says "whatever you think is best", provide your recommendation and g
    - **MODERATE** steps: Sequential subagent with focused context
    - **COMPLEX** steps: Isolated subagent with thorough context
 
-   The plan should be detailed enough to give suitable context if the conversation is compacted and conversational context is lost. It should prioritize high level design, architecture and decisions over granular code snippets. 
+   The plan should be detailed enough to give suitable context if the conversation is compacted and conversational context is lost. It should prioritize high level design, architecture and decisions over granular code snippets.
+
+6. **Architecture Review** — automatically stress-test the plan before implementation. This step is mandatory for medium and complex tasks.
+
+   Launch **3 review agents** in parallel, each given the plan file path and instructed to review the architecture design (not code — the plan itself):
+
+   | Agent (subagent_type) | Model | Focus |
+   |-------|-------|-------|
+   | solid-reviewer | opus | SOLID violations in the proposed design — SRP bloat, ISP violations (e.g., tagged unions with unused fields), missing extension points, broken substitutability, concrete dependencies |
+   | readability-reviewer | sonnet | Naming clarity, cognitive complexity of proposed types, whether the design is immediately understandable to a new developer, confusing abstractions |
+   | code-quality-reviewer | sonnet | YAGNI (infrastructure without consumers), over-engineering (unnecessary abstractions), DRY violations, type proliferation, simpler alternatives |
+
+   Each agent prompt must include:
+   - The plan file path (`plans/<feature-name>.md`)
+   - Instruction: "Review the architecture design in this plan file. Focus on the proposed types, their responsibilities, naming, and relationships. Flag code smells, SOLID violations, over-engineering, confusing abstractions, and anything that could be simplified. Suggest concrete alternatives for each issue found."
+   - The key codebase files relevant to the design, so agents can assess whether the design fits the existing patterns
+
+   After all agents return:
+   1. Synthesize findings across all three reviewers — deduplicate, identify convergence (issues flagged by multiple reviewers are high-confidence)
+   2. Categorize by severity (High / Medium / Low)
+   3. For each High-severity finding, propose a concrete revision to the plan
+   4. Present the synthesis to the user: what the reviewers found, what you recommend changing, and the revised type inventory if applicable
+   5. Update the plan file with accepted revisions
+   6. **GATE: User approves the reviewed plan before proceeding to implementation**
+
+   If the review reveals fundamental problems (e.g., the core data type is over-engineered, key abstractions are wrong), revise the architecture section of the plan — don't just note the issues and move on.
 
 ---
 
@@ -240,7 +265,7 @@ If the user says "whatever you think is best", provide your recommendation and g
 **Goal**: Build the feature following the approved architecture
 
 **Actions**:
-1. Read the plan file from `.claude/plans/`
+1. Read the plan file from `plans/`
 2. Present implementation strategy to user based on the complexity estimates in the plan:
    - For tasks with mostly SIMPLE steps: "I'll implement these directly in our conversation - they're straightforward"
    - For tasks with MODERATE/COMPLEX steps: "I recommend using focused subagents for steps X, Y, Z to keep context clean. Steps A, B are simple enough to do directly."
@@ -331,7 +356,7 @@ If the user says "whatever you think is best", provide your recommendation and g
 
 **Actions**:
 1. Mark all todos complete
-2. Ensure plan file in `.claude/plans/` is fully updated with completion status
+2. Ensure plan file in `plans/` is fully updated with completion status
 3. Run doc-updater agent one final time to ensure CLAUDE.md and README.md are current
 4. Summarize:
    - What was built
