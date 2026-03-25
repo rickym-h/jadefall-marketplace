@@ -36,7 +36,7 @@
       "name": "ricky-dev",
       "source": "./plugins/ricky-dev",
       "description": "Tailored feature development workflow with socratic discovery, architecture-first design, SOLID-focused code review, and specialized .NET/UE5 support",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "keywords": ["feature-dev", "code-review", "solid", "dotnet", "ue5", "architecture"],
       "category": "development"
     }
