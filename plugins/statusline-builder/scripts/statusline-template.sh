@@ -21,7 +21,7 @@ SEP="${GRAY}|${RESET}"
 
 # ==== COMPONENT: model ====
 # {{BEGIN:model}}
-MODEL=$(echo "$input" | jq -r '.model.display_name // .model.id // "Unknown"')
+MODEL=$(echo "$input" | jq -r '.model.display_name // .model.id // "Unknown"' | sed 's/ context//')
 MODEL_LOWER=$(echo "$MODEL" | tr '[:upper:]' '[:lower:]')
 
 case "$MODEL_LOWER" in
@@ -107,11 +107,15 @@ if [ -n "$SESSION_OUTPUT" ]; then
     DAILY_COST=$(echo "$DAILY_OUTPUT" | jq -r '.daily[-1].totalCost // 0' 2>/dev/null || echo "0")
 
     # {{BEGIN:daily_cost}}
-    DAILY_COST_DISPLAY="${YELLOW}📅 \$$(printf "%.2f" "$DAILY_COST")${RESET}"
+    DAILY_FMT="%.2f"
+    [ "$(printf "%.0f" "$DAILY_COST")" -ge 10 ] 2>/dev/null && DAILY_FMT="%.0f"
+    DAILY_COST_DISPLAY="${YELLOW}📅 \$$(printf "$DAILY_FMT" "$DAILY_COST")${RESET}"
     # {{END:daily_cost}}
 
     # {{BEGIN:monthly_cost}}
-    MONTHLY_COST_DISPLAY="${PINK}Σ \$$(printf "%.2f" "$MONTHLY_COST")${RESET}"
+    MONTHLY_FMT="%.2f"
+    [ "$(printf "%.0f" "$MONTHLY_COST")" -ge 10 ] 2>/dev/null && MONTHLY_FMT="%.0f"
+    MONTHLY_COST_DISPLAY="${PINK}Σ \$$(printf "$MONTHLY_FMT" "$MONTHLY_COST")${RESET}"
     # {{END:monthly_cost}}
 else
     COST_ERROR="${RED}⚠ ccusage: run 'npx ccusage@latest'${RESET}"
@@ -167,6 +171,65 @@ if command -v claude &>/dev/null; then
 fi
 # {{END:version}}
 
+# ==== COMPONENT: auth ====
+# {{BEGIN:auth}}
+AUTH_CACHE="/tmp/claude_auth_cache.json"
+AUTH_CACHE_AGE=5
+AUTH_DISPLAY=""
+AUTH_SHOW_EMAIL="{{AUTH_SHOW_EMAIL}}"
+
+fetch_auth() {
+    if [ -f "$AUTH_CACHE" ]; then
+        local file_age=$(($(date +%s) - $(stat -f %m "$AUTH_CACHE" 2>/dev/null || echo 0)))
+        if [ "$file_age" -lt "$AUTH_CACHE_AGE" ]; then
+            cat "$AUTH_CACHE"
+            return 0
+        fi
+    fi
+
+    local output
+    if output=$(claude auth status 2>/dev/null) && [ -n "$output" ]; then
+        echo "$output" > "$AUTH_CACHE" 2>/dev/null
+        echo "$output"
+        return 0
+    fi
+    return 1
+}
+
+AUTH_OUTPUT=$(fetch_auth)
+if [ -n "$AUTH_OUTPUT" ]; then
+    AUTH_METHOD=$(echo "$AUTH_OUTPUT" | jq -r '.authMethod // "unknown"')
+    AUTH_EMAIL=$(echo "$AUTH_OUTPUT" | jq -r '.email // ""')
+    API_KEY_SOURCE=$(echo "$AUTH_OUTPUT" | jq -r '.apiKeySource // ""')
+    SUB_TYPE=$(echo "$AUTH_OUTPUT" | jq -r '.subscriptionType // ""')
+    ORG_NAME=$(echo "$AUTH_OUTPUT" | jq -r '.orgName // ""')
+
+    case "$AUTH_METHOD" in
+        claude.ai)
+            if [ -n "$API_KEY_SOURCE" ]; then
+                AUTH_COLOR=$GREEN; AUTH_ICON="🏢"; AUTH_LABEL="$ORG_NAME"
+            elif [ -n "$SUB_TYPE" ]; then
+                SUB_UPPER=$(echo "$SUB_TYPE" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
+                AUTH_COLOR=$BLUE; AUTH_ICON="👤"; AUTH_LABEL="$SUB_UPPER"
+            else
+                AUTH_COLOR=$YELLOW; AUTH_ICON="🔐"; AUTH_LABEL="claude.ai"
+            fi
+            ;;
+        api_key)   AUTH_COLOR=$PEACH;  AUTH_ICON="🔑"; AUTH_LABEL="API" ;;
+        *)         AUTH_COLOR=$YELLOW; AUTH_ICON="🔑"; AUTH_LABEL="$AUTH_METHOD" ;;
+    esac
+
+    EMAIL_SUFFIX=""
+    if [ "$AUTH_SHOW_EMAIL" = "true" ] && [ -n "$AUTH_EMAIL" ]; then
+        EMAIL_SUFFIX=" ${GRAY}(${AUTH_EMAIL})${RESET}"
+    fi
+
+    AUTH_DISPLAY="${AUTH_COLOR}${AUTH_ICON} ${AUTH_LABEL}${RESET}${EMAIL_SUFFIX}"
+else
+    AUTH_DISPLAY="${RED}🔑 ✗${RESET}"
+fi
+# {{END:auth}}
+
 # ==== BUILD OUTPUT ====
 # {{BEGIN:output}}
 OUTPUT=""
@@ -198,6 +261,9 @@ fi
 
 # {{OUTPUT:version}}
 [ -n "$VERSION_DISPLAY" ] && OUTPUT="${OUTPUT:+$OUTPUT $SEP }${VERSION_DISPLAY}"
+
+# {{OUTPUT:auth}}
+[ -n "$AUTH_DISPLAY" ] && OUTPUT="${OUTPUT:+$OUTPUT $SEP }${AUTH_DISPLAY}"
 
 printf "%s" "$OUTPUT"
 # {{END:output}}

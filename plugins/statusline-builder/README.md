@@ -17,20 +17,19 @@ Create a personalized statusline by choosing which components to display:
 | **Directory** | 📁 | Current directory name |
 | **Project** | 📦 | Project name from manifest files |
 | **Version** | v | Claude Code version |
+| **Auth** | 🏢/👤/🔑 | Account type: company org (green), personal subscription (blue), API key (peach), not logged in (red). Optional email display. |
 
-## Commands
+## Usage
 
 ### `/statusline-builder:setup`
 
 Interactive setup wizard to build your custom statusline:
 1. Select which components to include
 2. Choose component order (or use recommended)
-3. Generates `~/.claude/statusline.sh`
+3. Generates and verifies `~/.claude/statusline.sh`
 4. Configures Claude Code to use it
 
-### `/statusline-builder:preview`
-
-Preview your current statusline with sample data to see how it looks.
+Run again at any time to modify your configuration.
 
 ## Requirements
 
@@ -45,5 +44,14 @@ Add this plugin to your Claude Code configuration or install from the marketplac
 ## Example Output
 
 ```
-✦ Claude Opus 4.5 | ███░░░░░░░░░░░░ 20% | ⚡ $1.50 | 📅 $8.00 | Σ $40.00 | ⎇ main* | 📁 my-project | v2.1.14
+✦ Claude Opus 4.5 | ███░░░░░░░░░░░░ 20% | ⚡ $1.50 | 📅 $8.00 | Σ $40.00 | ⎇ main* | 📁 my-project | v2.1.14 | 🏢 PortSwigger Ltd (your.name@portswigger.net)
 ```
+
+### Auth Display Variants
+
+| Account type | Without email | With email |
+|---|---|---|
+| Company (via `/login`) | `🏢 PortSwigger Ltd` | `🏢 PortSwigger Ltd (your.name@portswigger.net)` |
+| Personal subscription | `👤 Pro` | `👤 Pro (user@gmail.com)` |
+| Custom API key | `🔑 API` | `🔑 API` (no email available) |
+| Not logged in | `🔑 ✗` | `🔑 ✗` |
